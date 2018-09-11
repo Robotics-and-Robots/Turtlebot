@@ -12,6 +12,7 @@
   <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" args="-param robot_description -urdf -model tortoisebot -x 8 -y -8" />
   
   <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"/>
+  <node name="listener" pkg="state_control" type="listener"/>
   
   <!-- mapping server -->
   <!-- <node name="map_server" pkg="map_server" type="map_server" args="$(find mapping)/maps/willow.yaml"/> -->
