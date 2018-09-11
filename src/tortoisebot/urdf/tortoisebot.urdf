@@ -1,15 +1,32 @@
 <?xml version="1.0"?>
 <robot name="tortoisebot">
 
+  <!-- cores -->
+  <gazebo reference="base_link">
+    <material>Gazebo/Orange</material>
+  </gazebo>
+  <gazebo reference="front_wheel">
+    <material>Gazebo/Green</material>
+  </gazebo>
+  <gazebo reference="right_wheel">
+    <material>Gazebo/Green</material>
+  </gazebo>
+  <gazebo reference="left_wheel">
+    <material>Gazebo/Green</material>
+  </gazebo>
+  <gazebo reference="front_caster">
+    <material>Gazebo/Yellow</material>
+  </gazebo>
+    <gazebo reference="hokuyo_link">
+    <material>Gazebo/Red</material>
+  </gazebo>
+
   <!-- caixa grande que eh o corpo do robo -->
   <link name="base_link">
     <visual>
       <geometry>
         <box size="0.6 0.3 0.3"/>
       </geometry>
-      <material name="silver">
-        <color rgba="0.75 0.75 0.75 1"/>
-      </material>
     </visual>
     
     <!-- informacao da fisica -->
@@ -30,7 +47,7 @@
       <geometry>
         <box size="0.1 0.1 0.3"/>
       </geometry>
-      <material name="silver"/>
+      <material name="green"/>
     </visual>
     
     <!-- informacao da fisica -->
@@ -50,7 +67,7 @@
     <axis xyz="0 0 1"/>
     <parent link="base_link"/>
     <child link="front_caster"/>
-    <origin rpy="0 0 0" xyz="0.3 0 0"/>
+    <origin rpy="0 0 0" xyz="0.3 0 0.001"/>
   </joint>
 
   <!-- rodinha da frente -->
@@ -59,7 +76,6 @@
       <geometry>
         <cylinder length="0.05" radius="0.035"/>
       </geometry>
-      <material name="black"/>
     </visual>
     
     <!-- informacao da fisica -->
@@ -88,9 +104,6 @@
       <geometry>
         <cylinder length="0.05" radius="0.035"/>
       </geometry>
-      <material name="black">
-        <color rgba="0 0 0 1"/>
-      </material>
     </visual>
     
     <!-- informacao da fisica -->
@@ -110,7 +123,7 @@
     <axis xyz="0 0 1"/>
     <parent link="base_link"/>
     <child link="right_wheel"/>
-    <origin rpy="-1.5708 0 0" xyz="-0.2825 -0.125 -.15"/>
+    <origin rpy="-1.5708 0 0" xyz="-0.2825 -0.124 -.15"/>
   </joint>
 
   <!-- rodinha esquerda -->
@@ -119,7 +132,9 @@
       <geometry>
         <cylinder length="0.05" radius="0.035"/>
       </geometry>
-      <material name="black"/>
+      <material name="red">
+        <color rgba="1 0 0 1"/>
+      </material>
     </visual>
     
     <!-- informacao da fisica -->
@@ -139,7 +154,7 @@
     <axis xyz="0 0 1"/>
     <parent link="base_link"/>
     <child link="left_wheel"/>
-    <origin rpy="-1.5708 0 0" xyz="-0.2825 0.125 -.15"/>
+    <origin rpy="-1.5708 0 0" xyz="-0.2825 0.124 -.15"/>
   </joint>
 
 
@@ -189,6 +204,9 @@
     <origin xyz="0 0 0.2" rpy="0 0 0"/>
     <parent link="base_link"/>
     <child link="hokuyo_link"/>
+    <material name="orange">
+      <color rgba="255.0 108.0 10.0 1.0"/>
+    </material>
   </joint>
   
   <!-- plugin que faz o sensor agir como um sensor -->
