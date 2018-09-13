@@ -67,7 +67,7 @@
     <axis xyz="0 0 1"/>
     <parent link="base_link"/>
     <child link="front_caster"/>
-    <origin rpy="0 0 0" xyz="0.3 0 0.001"/>
+    <origin rpy="0 0 0" xyz="0.3 0 0"/>
   </joint>
 
   <!-- rodinha da frente -->
@@ -123,7 +123,7 @@
     <axis xyz="0 0 1"/>
     <parent link="base_link"/>
     <child link="right_wheel"/>
-    <origin rpy="-1.5708 0 0" xyz="-0.2825 -0.124 -.15"/>
+    <origin rpy="-1.5708 0 0" xyz="-0.2825 -0.125 -.15"/>
   </joint>
 
   <!-- rodinha esquerda -->
@@ -154,7 +154,7 @@
     <axis xyz="0 0 1"/>
     <parent link="base_link"/>
     <child link="left_wheel"/>
-    <origin rpy="-1.5708 0 0" xyz="-0.2825 0.124 -.15"/>
+    <origin rpy="-1.5708 0 0" xyz="-0.2825 0.125 -.15"/>
   </joint>
 
 
@@ -204,9 +204,6 @@
     <origin xyz="0 0 0.2" rpy="0 0 0"/>
     <parent link="base_link"/>
     <child link="hokuyo_link"/>
-    <material name="orange">
-      <color rgba="255.0 108.0 10.0 1.0"/>
-    </material>
   </joint>
   
   <!-- plugin que faz o sensor agir como um sensor -->
