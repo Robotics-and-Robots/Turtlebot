@@ -141,7 +141,7 @@ void stateSpin(ros::Publisher* p){
 
 			geometry_msgs::Twist m;
 			m.linear.x = (abs(MIN_MOVE_VEL) > abs(err_x)) ? MIN_MOVE_VEL : err_x;
-			m.linear.x = (err_x > 0) ? -abs(m.linear.x) : abs(m.linear.x);
+			m.linear.x = (err_x > 0) ? -abs(m.linear.x) : abs(m.linear.x);			
 			pub.publish(m);	//move forward
 			
 		}else{
@@ -167,7 +167,8 @@ void stateSpin(ros::Publisher* p){
 	}else if(state == STATE_ROT2_EXEC){
 
 		//turns until reaches rot1
-		double err = (current_pose.theta - rot2);
+		//double err = (current_pose.theta - rot2);
+		double err = current_pose.theta - destination.theta;
 		ROS_INFO("rotation err: %f", err);
 		
 		if(abs(err) > ALLOWED_ERROR){ 
