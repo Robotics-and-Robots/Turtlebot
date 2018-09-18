@@ -46,6 +46,8 @@
 /* use "man termios" to get more info about  termios structure */
 /*-------------------------------------------------------------*/
 
+	#include <cstring>
+	#include <iostream>
     #include <stdio.h>
     #include <fcntl.h>   /* File Control Definitions           */
     #include <termios.h> /* POSIX Terminal Control Definitions */
@@ -53,125 +55,82 @@
     #include <errno.h>   /* ERROR Number Definitions           */
     #include <stdint.h>
 
-void main(void)
+using namespace std;
+
+int main(void)
 {
-    int fd;/*File Descriptor*/
+    int fd;
 
     printf("\n +----------------------------------+");
     printf("\n |        Serial Port Read          |");
     printf("\n +----------------------------------+");
 
-    /*------------------------------- Opening the Serial Port -------------------------------*/
-
-    /* Change /dev/ttyUSB0 to the one corresponding to your system */
-
-    fd = open("/dev/ttyUSB0",O_RDWR | O_NOCTTY);	/* ttyUSB0 is the FT232 based USB2SERIAL Converter   */
-                        /* O_RDWR   - Read/Write access to serial port       */
-                        /* O_NOCTTY - No terminal will control the process   */
-                        /* Open in blocking mode,read will wait              */
+    fd = open("/dev/ttyUSB0",O_WRONLY | O_NOCTTY | O_NONBLOCK | O_NDELAY);	
                             
-                                                                    
-                            
-    if(fd == -1)						/* Error Checking */
-            printf("\n  Error! in Opening ttyUSB0  ");
-    else
-            printf("\n  ttyUSB0 Opened Successfully ");
+	if (fd < 0)
+		cout << "Error " << errno << " opening " << "/dev/ttyUSB0" << ": " << strerror (errno) << endl;
 
-
-    /*---------- Setting the Attributes of the serial port using termios structure --------- */
-
-    struct termios SerialPortSettings;	/* Create the structure                          */
-
-    tcgetattr(fd, &SerialPortSettings);	/* Get the current attributes of the Serial port */
+    struct termios tty;	/* Create the structure                          */
+    tcgetattr(fd, &tty);	/* Get the current attributes of the Serial port */
 
     /* Setting the Baud rate */
-    cfsetispeed(&SerialPortSettings, B115200); /* Set Read  Speed as 9600                       */
-    cfsetospeed(&SerialPortSettings, B115200); /* Set Write Speed as 9600                       */
+    cfsetispeed(&tty, B115200); /* Set Read  Speed as 9600                       */
+    cfsetospeed(&tty, B115200); /* Set Write Speed as 9600                       */
 
     /* 8N1 Mode */
-    SerialPortSettings.c_cflag &= ~PARENB;   /* Disables the Parity Enable bit(PARENB),So No Parity   */
-    SerialPortSettings.c_cflag &= ~CSTOPB;   /* CSTOPB = 2 Stop bits,here it is cleared so 1 Stop bit */
-    SerialPortSettings.c_cflag &= ~CSIZE;	 /* Clears the mask for setting the data size             */
-    SerialPortSettings.c_cflag |=  CS8;      /* Set the data bits = 8                                 */
+    tty.c_cflag &= ~PARENB;   /* Disables the Parity Enable bit(PARENB),So No Parity   */
+    tty.c_cflag &= ~CSTOPB;   /* CSTOPB = 2 Stop bits,here it is cleared so 1 Stop bit */
+    tty.c_cflag |=  CS8;      /* Set the data bits = 8                                 */
 
-    // SerialPortSettings.c_cflag &= ~CRTSCTS;       /* No Hardware flow Control                         */
-    SerialPortSettings.c_cflag |= CREAD | CLOCAL; /* Enable receiver,Ignore Modem Control lines       */ 
-
-
-    SerialPortSettings.c_iflag &= ~(IXON | IXOFF | IXANY);          /* Disable XON/XOFF flow control both i/p and o/p */
-    SerialPortSettings.c_iflag &= ~(ICANON | ECHO | ECHOE | ISIG);  /* Non Cannonical mode                            */
-
-    SerialPortSettings.c_oflag &= ~OPOST;/*No Output Processing*/
-
-    /* Setting Time outs */
-    SerialPortSettings.c_cc[VMIN] = 10; /* Read at least 10 characters */
-    SerialPortSettings.c_cc[VTIME] = 0; /* Wait indefinetly   */
-
-
-    if((tcsetattr(fd, TCSANOW, &SerialPortSettings)) != 0) /* Set the attributes to the termios structure*/
+    if((tcsetattr(fd, TCSANOW, &tty)) != 0) /* Set the attributes to the termios structure*/
         printf("\n  ERROR ! in Setting attributes");
     else
         printf("\n  BaudRate = 115200 \n  StopBits = 1 \n  Parity   = none");
         
-        /*------------------------------- Read data from serial port -----------------------------*/
-
     tcflush(fd, TCIFLUSH);   /* Discards old data in the rx buffer            */
+	unsigned int packet_size = 7;
 
-    char read_buffer[32];   /* Buffer to store the data received              */
-    int  bytes_read = 0;    /* Number of bytes read by the read() system call */
-    int  i = 0;
-
-    unsigned char packet[9] = {
+	/* PACOTE QUE TOCA MUSIQUINHA
+    unsigned char packet[packet_size] = {
         0xAA, 0x55, // Header
-        0x05,       // Lenght
-        0x03,       // Sub-Payload 0 - Header
-        0x03,       // Sub-Payload 1 - Lenght
-        0x0F,       // Sub-Payload 2 - CMD - Note
-        0xFF,       // Sub-Payload 3 - CMD - Note
-        0xFF,       // Sub-Payload 4 - CMD - Duration
+        0x03,       // Lenght
+        0x04,       // Sub-Payload 0 - Header
+        0x01,       // Sub-Payload 1 - Lenght
+        0x05,       // Sub-Payload 2 - CMD - Note
+    };*/
+
+	/* PACOTE QUE FAZ MOVER */
+    unsigned char packet[packet_size] = {
+        0xAA, 0x55, // Header
+        0x06,       // Lenght
+        0x01,       // Sub-Payload 0 - Header
+        0x04,       // Sub-Payload 1 - Lenght
+        0x80, 0x10, // Sub-Payload 2 e 3 - Speed
+        0x70, 0x00, // Sub-Payload 4 e 5 - Radius
     };
 
-    unsigned int packet_size = 9;
     unsigned char cs = 0;
+    
     for (unsigned int i = 2; i < packet_size; i++)
-    {
         cs ^= packet[i];
-    }
-    //return cs ? false : true;
 
-    packet[8] = cs;
+    packet[packet_size -1] = cs;
 
-    for (int i = 0; i < (unsigned int) sizeof packet; i ++)
-    {
-        printf("\n Packet: 0x%x", packet[i]);        
-    }
+    for (int i = 0; i < packet_size; i ++)
+        printf("\n Packet: 0x%02x", packet[i]);
+    cout << endl;        
 
-    // tcflush(fd);
-
-    int bytes_written = write(fd, packet, 9);
-    for (int i = 0; i < 100; i++){
-
-        bytes_written = write(fd, packet, 9);
+    int bytes_written;    
+    for (int i = 0; i < 10; i++){
+        bytes_written = write(fd, packet, packet_size);
         printf("written %d bytes\n", bytes_written);
-
     }
     
-    
-
-    // tcflush(fd);
-    
-
-    // bytes_read = read(fd,&read_buffer,32); /* Read the data                   */
-        
-    // printf("\n\n  Bytes Rxed -%d", bytes_read); /* Print the number of bytes read */
-    // printf("\n\n  ");
-
-    // for(i=0;i<bytes_read;i++)	 /*printing only the received characters*/
-    //     printf("%c",read_buffer[i]);
-
     printf("\n +----------------------------------+\n\n\n");
-
     close(fd); /* Close the serial port */
 
+	return 0;
+
 }
+
 
