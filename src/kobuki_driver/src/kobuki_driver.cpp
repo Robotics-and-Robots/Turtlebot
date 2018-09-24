@@ -33,6 +33,17 @@
 /*                                                                                                    */
 /*====================================================================================================*/
 
+
+	/* PACOTE QUE TOCA MUSIQUINHA */
+    //unsigned int packet_size = 7;
+    // packet[0] = 0xAA;
+    // packet[1] = 0x55;
+    // packet[2] = 0x03;
+    // packet[3] = 0x04;
+    // packet[4] = 0x01;
+    // packet[5] = 0x04;
+
+
 /*====================================================================================================*/
 /* Sellecting the Serial port Number on Linux                                                         */
 /* ---------------------------------------------------------------------------------------------------*/ 
@@ -57,64 +68,19 @@
 using namespace std;
 
 void SerialConfig(int*);
+void MountPacket_Twist(unsigned char*, unsigned int, int);
 
 int main(void)
 {
-    int fd;
-    int bytes_written; 
-    unsigned char packet_checksum = 0;
+    int             fd;
+    int             bytes_written; 
+    unsigned int    packet_size = 13;       // PT
+	unsigned char   packet[packet_size];
     
-    SerialConfig(&fd);                  // Serial configuration
-
-	unsigned int packet_size = 13;      // PT
-	//unsigned int packet_size = 7;
-    unsigned char packet[packet_size];
-	
-
-	/* PACOTE QUE TOCA MUSIQUINHA */
-    // packet[0] = 0xAA;
-    // packet[1] = 0x55;
-    // packet[2] = 0x03;
-    // packet[3] = 0x04;
-    // packet[4] = 0x01;
-    // packet[5] = 0x04;
-
-    /* PACOTE QUE FAZ MOVER */
-
-    packet[0] = 0xAA; // Header 0
-    packet[1] = 0x55; // Header 1
-    packet[2] = 0x09; // Lenght
-    
-    //payload move
-    packet[3] = 0x01; // Sub-Payload 0 - Header
-    packet[4] = 0x04; // Sub-Payload 1 - Lenght
-
-    //payload musiquinha
-    packet[9] = 0x04;
-    packet[10] = 0x01;
-    packet[11] = 0x02;
-        
-    for (int i = 0; i < 100; i++){
-        
-        //packet[5] = 0x90; // Sub-Payload 2 - Speed
-        //packet[6] = 0xFF; // Sub-Payload 3 - Speed
-        uint16_t* vel = (uint16_t*)&packet[5];
-        *vel = i * 50;
-        
-        //packet[7] = 0x70; // Sub-Payload 4 - Radius
-        //packet[8] = 0x20; // Sub-Payload 5 - Radius
-        uint16_t* rad = (uint16_t*)&packet[7];
-        *rad = i * 50;         
-
-        packet_checksum = 0;
-        for (unsigned int i = 2; i < packet_size; i++)
-            packet_checksum ^= packet[i];
-
-        packet[packet_size -1] = packet_checksum;
-
-        // for (int i = 0; i < packet_size; i ++)
-        //     printf("\n Packet: 0x%02x", packet[i]);
-        // cout << endl;        
+    SerialConfig(&fd);                      // Serial configuration
+    MountPacket_Twist(packet, packet_size, 5);        //
+	        
+    for (int i = 0; i < 100; i++){   
  
         bytes_written = write(fd, packet, packet_size);
         // printf("written %d bytes\n", bytes_written);
@@ -122,7 +88,6 @@ int main(void)
         sleep(3);
     }
 
-    printf("\n +----------------------------------+\n\n\n");
     close(fd); /* Close the serial port */
 
 	return 0;
@@ -158,4 +123,41 @@ void SerialConfig(int* fd){
         printf("\n  BaudRate = 115200 \n  StopBits = 1 \n  Parity   = none");
         
     tcflush(*fd, TCIFLUSH);                     /* Discards old data in the rx buffer            */
+}
+
+void MountPacket_Twist(unsigned char* packet, unsigned int packet_size, int velocity){
+
+    unsigned char packet_checksum = 0;
+
+    /* PACOTE QUE FAZ MOVER */
+    packet[0] = 0xAA; // Header 0
+    packet[1] = 0x55; // Header 1
+    packet[2] = 0x09; // Lenght
+    
+    //payload move
+    packet[3] = 0x01; // Sub-Payload 0 - Header
+    packet[4] = 0x04; // Sub-Payload 1 - Lenght
+
+    //payload musiquinha
+    packet[9] = 0x04;
+    packet[10] = 0x01;
+    packet[11] = 0x02;
+
+    //packet[5] = 0x90; // Sub-Payload 2 - Speed
+    //packet[6] = 0xFF; // Sub-Payload 3 - Speed
+    uint16_t* vel = (uint16_t*)&packet[5];
+    *vel = velocity * 50;
+    
+    //packet[7] = 0x70; // Sub-Payload 4 - Radius
+    //packet[8] = 0x20; // Sub-Payload 5 - Radius
+    uint16_t* rad = (uint16_t*)&packet[7];
+    // *rad = i * 50;
+    *rad = 5 * 0;
+
+    packet_checksum = 0;
+    for (unsigned int i = 2; i < packet_size; i++)
+        packet_checksum ^= packet[i];
+
+    packet[packet_size -1] = packet_checksum;
+
 }
