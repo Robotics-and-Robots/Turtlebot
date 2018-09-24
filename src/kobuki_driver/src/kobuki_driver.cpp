@@ -88,26 +88,49 @@ int main(void)
         printf("\n  BaudRate = 115200 \n  StopBits = 1 \n  Parity   = none");
         
     tcflush(fd, TCIFLUSH);   /* Discards old data in the rx buffer            */
-	unsigned int packet_size = 7;
+	unsigned int packet_size = 13;
+	//unsigned int packet_size = 7;
+	
 
-	/* PACOTE QUE TOCA MUSIQUINHA
-    unsigned char packet[packet_size] = {
-        0xAA, 0x55, // Header
-        0x03,       // Lenght
-        0x04,       // Sub-Payload 0 - Header
-        0x01,       // Sub-Payload 1 - Lenght
-        0x05,       // Sub-Payload 2 - CMD - Note
-    };*/
+	/* PACOTE QUE TOCA MUSIQUINHA */
+    unsigned char packet[packet_size];
+/*
+    packet[0] = 0xAA;
+    packet[1] = 0x55;
+    packet[2] = 0x03;
+    packet[3] = 0x04;
+    packet[4] = 0x01;
+    packet[5] = 0x04;
 
-	/* PACOTE QUE FAZ MOVER */
-    unsigned char packet[packet_size] = {
-        0xAA, 0x55, // Header
-        0x06,       // Lenght
-        0x01,       // Sub-Payload 0 - Header
-        0x04,       // Sub-Payload 1 - Lenght
-        0x80, 0x10, // Sub-Payload 2 e 3 - Speed
-        0x70, 0x00, // Sub-Payload 4 e 5 - Radius
-    };
+
+
+	 PACOTE QUE FAZ MOVER */
+
+for (int i = 0; i < 100; i++){
+
+	packet[0] = 0xAA; // Header 0
+    packet[1] = 0x55; // Header 1
+    packet[2] = 0x09; // Lenght
+    
+    //payload move
+    packet[3] = 0x01; // Sub-Payload 0 - Header
+    packet[4] = 0x04; // Sub-Payload 1 - Lenght
+    
+    uint16_t* vel = (uint16_t*)&packet[5];
+    *vel = i * 50;
+    
+    //packet[5] = 0x90; // Sub-Payload 2 - Speed
+    //packet[6] = 0xFF; // Sub-Payload 3 - Speed
+    
+    uint16_t* rad = (uint16_t*)&packet[7];
+    *rad = i * 50; 
+    //packet[7] = 0x70; // Sub-Payload 4 - Radius
+    //packet[8] = 0x20; // Sub-Payload 5 - Radius
+
+	//payload musiquinha
+    packet[9] = 0x04;
+    packet[10] = 0x01;
+    packet[11] = 0x02;
 
     unsigned char cs = 0;
     
@@ -121,11 +144,11 @@ int main(void)
     cout << endl;        
 
     int bytes_written;    
-    for (int i = 0; i < 10; i++){
-        bytes_written = write(fd, packet, packet_size);
-        printf("written %d bytes\n", bytes_written);
-    }
+    bytes_written = write(fd, packet, packet_size);
+    printf("written %d bytes\n", bytes_written);
     
+    sleep(3);
+}
     printf("\n +----------------------------------+\n\n\n");
     close(fd); /* Close the serial port */
 
