@@ -52,15 +52,20 @@
 #include <unistd.h>  /* UNIX Standard Definitions 	       */ 
 #include <errno.h>   /* ERROR Number Definitions           */
 #include <stdint.h>
+#include <cstdlib>
 
 using namespace std;
 
-#define IN_BUFFER_SIZE 20     /* in buffer has 20 words */
-#define CFG_DELAY 3           /* wait for 3 seconds before recvn' packages */
+#define SOUND_PACKET_SIZE 7
+#define IN_BUFFER_SIZE 40     /* in buffer has 20 words */
+#define CFG_DELAY 1           /* wait for 3 seconds before recvn' packages */
 
 void SerialConfig(int*);
 void MountPacket_Twist(unsigned char*, unsigned int, int, int, int, int, int, int);
 void MountPacket_Sound(unsigned char*, unsigned int);
+
+void p_write(int* fd);
+void p_read(int* fd);
 
 int main(void)
 {
@@ -69,13 +74,13 @@ int main(void)
 
     printf("\n +----------------------------------+");
     printf("\n |        Kobuki Driver             |");
-    printf("\n +----------------------------------+");
+    printf("\n +----------------------------------+\n");
 
     int counter = 0;
     for (;;){   
 
-	read(fd);
-	write(fd);
+	    p_read(&fd);
+	    //p_write(&fd);
        
         sleep(CFG_DELAY);
         counter++;
@@ -86,27 +91,38 @@ int main(void)
 
 }
 
-void read(int fd){
+void p_read(int* fd){
 
-    unsigned char* in_pkt = malloc(sizeof(unsigned char) * IN_BUFFER_SIZE);
-    int read_bytes = read (fd, in_pkt, IN_BUFFER_SIZE);
+    unsigned char* in_pkt = (unsigned char*) malloc(sizeof(unsigned char) * IN_BUFFER_SIZE);
+    
+    int read_bytes = read (*fd, in_pkt, IN_BUFFER_SIZE);
+    
+    if(read_bytes < 1){
+        cout << strerror (errno) << endl;
+    }else{
+        cout << "Read " << read_bytes << " bytes" << endl;
 
-    printf("Read %d bytes\n", read_bytes);
+        for (int i = 0; i < read_bytes; i++)
+            printf("0x%02x ", in_pkt[i]);
 
-    for (int i = 0; i < read_bytes; i++)
-        printf("0x%02x ", incoming_packet[i]);
+        cout << endl;
+    }
 
     free(in_pkt);
 }
 
-void write(int* fd){
-    //todo
+void p_write(int* fd){
 
+    unsigned char* out_pkt = (unsigned char*) malloc(sizeof(unsigned char) * SOUND_PACKET_SIZE);
+    MountPacket_Sound(out_pkt, SOUND_PACKET_SIZE);
+
+    write(*fd, out_pkt, SOUND_PACKET_SIZE);
+    free(out_pkt);
 }
 
 void SerialConfig(int* fd){
 
-    *fd = open("/dev/ttyUSB0",O_WRONLY | O_NOCTTY | O_NONBLOCK | O_NDELAY);
+    *fd = open("/dev/ttyUSB0",O_RDWR | O_NOCTTY | O_NONBLOCK | O_NDELAY);
                             
     if (fd < 0)
 		cout << "Error " << errno << " opening " << "/dev/ttyUSB0" << ": " << strerror (errno) << endl;
@@ -139,7 +155,7 @@ void MountPacket_Twist( unsigned char* packet,
                         int velocity_z=0, int angle_z=0){
 
     unsigned char packet_checksum = 0;
-    packet = malloc(size * sizeof(unsigned char));
+    packet = (unsigned char*) malloc(packet_size * sizeof(unsigned char));
 
     /* PACOTE QUE FAZ MOVER */
     packet[0] = 0xAA; // Header 0
@@ -179,17 +195,16 @@ void MountPacket_Sound(unsigned char* packet, unsigned int packet_size){
     unsigned char packet_checksum = 0;
 
     /* PACOTE QUE TOCA MUSIQUINHA */
-    packet[0] = 0xAA;
-    packet[1] = 0x55;
-    packet[2] = 0x03;
-    packet[3] = 0x04;
-    packet[4] = 0x01;
-    packet[5] = 0x04;
+    packet[0] = 0xAA;  //header 0
+    packet[1] = 0x55;  //header 1
+    packet[2] = 0x03;  //length
+    packet[3] = 0x04;  //id
+    packet[4] = 0x01;  //size 
+    packet[5] = 0x01;  //tune
 
     packet_checksum = 0;
     for (unsigned int i = 2; i < packet_size; i++)
         packet_checksum ^= packet[i];
 
     packet[packet_size -1] = packet_checksum;
-
 }
