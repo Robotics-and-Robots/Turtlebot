@@ -1,0 +1,17 @@
+#define BUFFER_LEN 100000
+#define BUFFER_WORD_LEN 1
+
+typedef buffer_t uint8_t[BUFFER_LEN];
+
+class Buffer{
+
+    private:
+        buffer_t buf;
+
+    public:
+        Buffer();
+        ~Buffer();
+        void push(uint8_t);
+        uint8_t pop();
+	void clear();
+};

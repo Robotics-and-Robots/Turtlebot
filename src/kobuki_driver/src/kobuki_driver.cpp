@@ -54,14 +54,19 @@
 #include <stdint.h>
 #include <cstdlib>
 
+#include "Include/Buffer.h"
+
 using namespace std;
 
 #define SOUND_PACKET_SIZE 7
 #define IN_BUFFER_SIZE 40     /* in buffer has 20 words */
 #define CFG_DELAY 1           /* wait for 3 seconds before recvn' packages */
 
-enum State { idle, header0, header1, length, , blue };
-State read_current_state = idle;
+enum State {
+    IDLE, HEADER0, HEADER1, LENGTH, PACKET, CHECKSUM
+};
+
+State read_current_state = IDLE;
 
 void SerialConfig(int*);
 void MountPacket_Twist(unsigned char*, unsigned int, int, int, int, int, int, int);
@@ -70,22 +75,83 @@ void MountPacket_Sound(unsigned char*, unsigned int);
 void p_write(int* fd);
 void p_read(int* fd);
 
+
+Buffer* buffer;   //buffer que guarda os pacotes da serial
+int fd;           //descritor da porta serial
+
+//funcao que trata o recebimento de pacotes
+static void* p_read(void* dummy){
+
+    uint8_t data;
+    int read_bytes;
+
+    while(true){
+        
+        read_bytes = read(fd, &data, 1);
+        
+        if(read_bytes < 1)
+            //cout << strerror (errno) << endl;
+            cout << "";
+        else{
+            buffer->push(data);
+            
+            //if(data == 0x55) printf("ohhyeahh");
+
+            //printf("0x%02x \t", tmp);
+        }
+        
+    }
+}
+
+void state_machine(){
+
+    uint8_t data;
+    data = buffer->pop();
+
+    switch(read_current_state){
+        case IDLE:
+            if(data == 0x01){
+                read_current_state = HEADER0;
+                //printf("achou HEADER0");
+            }
+            break;
+        case HEADER0:
+            if(data == 0x0F)
+                read_current_state = LENGTH;
+            else{
+                read_current_state = IDLE;
+            }
+        case LENGTH:
+            printf("0x%02x ", data);
+            read_current_state = IDLE;
+            break;
+    }
+
+}
+
+//startup
 int main(void)
 {
-    int fd;
     SerialConfig(&fd);  /* Serial configuration */
 
     printf("\n +----------------------------------+");
     printf("\n |        Kobuki Driver             |");
     printf("\n +----------------------------------+\n");
 
+	//inicializa buffer
+	buffer = new Buffer();
+
+	//inicia thread que coloca os dados recebidos no buffer
+    pthread_t t;
+    if(pthread_create(&t, NULL, &p_read, NULL)){
+        cout << "error creating thread" <<endl;
+    }
+
     int counter = 0;
     for (;;){   
-
-	    p_read(&fd);
-	    //p_write(&fd);
        
-        sleep(CFG_DELAY);
+        state_machine();
+        //sleep(CFG_DELAY);
         counter++;
     }
 
@@ -94,55 +160,6 @@ int main(void)
 
 }
 
-void p_read(int* fd){
-
-    unsigned char* in_pkt = (unsigned char*) malloc(sizeof(unsigned char) * IN_BUFFER_SIZE);
-    
-    int read_bytes = read (*fd, in_pkt, IN_BUFFER_SIZE);
-    
-    if(read_bytes < 1){
-        cout << strerror (errno) << endl;
-    }else{
-        cout << "Read " << read_bytes << " bytes" << endl;
-
-        for (int i = 0; i < read_bytes; i++){
-
-            printf("0x%02x ", in_pkt[i]);
-
-            if read_current_state == idle{
-
-                if in_pkt[i] == 0xAA{
-
-                    read_current_state = header0;
-
-                }
-                    
-            }else if read_current_state == header0{
-
-                if in_pkt[i] == 0x55{
-
-                    read_current_state = header1;
-
-                }
-                
-            }else if read_current_state == header1{
-
-                if in_pkt[i] == 0x{
-
-                    read_current_state = ;
-
-                }
-            }
-
-
-        }
-           
-
-        cout << endl;
-    }
-
-    free(in_pkt);
-}
 
 void p_write(int* fd){
 
