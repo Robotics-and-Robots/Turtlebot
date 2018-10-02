@@ -60,6 +60,9 @@ using namespace std;
 #define IN_BUFFER_SIZE 40     /* in buffer has 20 words */
 #define CFG_DELAY 1           /* wait for 3 seconds before recvn' packages */
 
+enum State { idle, header0, header1, length, , blue };
+State read_current_state = idle;
+
 void SerialConfig(int*);
 void MountPacket_Twist(unsigned char*, unsigned int, int, int, int, int, int, int);
 void MountPacket_Sound(unsigned char*, unsigned int);
@@ -102,8 +105,38 @@ void p_read(int* fd){
     }else{
         cout << "Read " << read_bytes << " bytes" << endl;
 
-        for (int i = 0; i < read_bytes; i++)
+        for (int i = 0; i < read_bytes; i++){
+
             printf("0x%02x ", in_pkt[i]);
+
+            if read_current_state == idle{
+
+                if in_pkt[i] == 0xAA{
+
+                    read_current_state = header0;
+
+                }
+                    
+            }else if read_current_state == header0{
+
+                if in_pkt[i] == 0x55{
+
+                    read_current_state = header1;
+
+                }
+                
+            }else if read_current_state == header1{
+
+                if in_pkt[i] == 0x{
+
+                    read_current_state = ;
+
+                }
+            }
+
+
+        }
+           
 
         cout << endl;
     }
