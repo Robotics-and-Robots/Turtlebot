@@ -62,8 +62,14 @@ using namespace std;
 #define IN_BUFFER_SIZE 40     /* in buffer has 20 words */
 #define CFG_DELAY 1           /* wait for 3 seconds before recvn' packages */
 
-enum State {
-    IDLE, HEADER0, HEADER1, LENGTH, PACKET, CHECKSUM
+enum State { //Basic Sensor Data Feedback - 50 Hz
+
+    IDLE,               HEADER,         LENGTH,
+    TIMESTAMP_0,        TIMESTAMP_1,    BUMPER,             WHEEL_DROP, CLIFF,
+    ENCODER_LEFT_0,     ENCODER_LEFT_1, 
+    ENCODER_RIGHT_0,    ENCODER_RIGHT_1,
+    PWM_LEFT,           PWM_RIGHT,      BUTTON,
+    CHARGER,            BATTERY,        OVERCURRENT_FLAGS
 };
 
 State read_current_state = IDLE;
@@ -71,131 +77,235 @@ State read_current_state = IDLE;
 void SerialConfig(int*);
 void MountPacket_Twist(unsigned char*, unsigned int, int, int, int, int, int, int);
 void MountPacket_Sound(unsigned char*, unsigned int);
+// serial data receive
+static void* p_read(void*);
+void state_machine();
+void p_write(int* serial_handler);
+void p_read(int* serial_handler);
 
-void p_write(int* fd);
-void p_read(int* fd);
-
-
-Buffer* buffer;   //buffer que guarda os pacotes da serial
-int fd;           //descritor da porta serial
-
-//funcao que trata o recebimento de pacotes
-static void* p_read(void* dummy){
-
-    uint8_t data;
-    int read_bytes;
-
-    while(true){
-        
-        read_bytes = read(fd, &data, 1);
-        
-        if(read_bytes < 1)
-            //cout << strerror (errno) << endl;
-            cout << "";
-        else{
-            buffer->push(data);
-            
-            //if(data == 0x55) printf("ohhyeahh");
-
-            //printf("0x%02x \t", tmp);
-        }
-        
-    }
-}
-
-void state_machine(){
-
-    uint8_t data;
-    data = buffer->pop();
-
-    switch(read_current_state){
-        case IDLE:
-            if(data == 0x01){
-                read_current_state = HEADER0;
-                //printf("achou HEADER0");
-            }
-            break;
-        case HEADER0:
-            if(data == 0x0F)
-                read_current_state = LENGTH;
-            else{
-                read_current_state = IDLE;
-            }
-        case LENGTH:
-            printf("0x%02x ", data);
-            read_current_state = IDLE;
-            break;
-    }
-
-}
+Buffer* buffer;     // stores serail packets
+int serial_handler; // serial handler (file descriptor)
 
 //startup
 int main(void)
 {
-    SerialConfig(&fd);  /* Serial configuration */
+    SerialConfig(&serial_handler);  /* Serial configuration */
 
     printf("\n +----------------------------------+");
     printf("\n |        Kobuki Driver             |");
     printf("\n +----------------------------------+\n");
 
-	//inicializa buffer
+	// buffer initialization
 	buffer = new Buffer();
 
-	//inicia thread que coloca os dados recebidos no buffer
+	// in a separated thread, bufferize the serial data
     pthread_t t;
     if(pthread_create(&t, NULL, &p_read, NULL)){
         cout << "error creating thread" <<endl;
     }
 
-    int counter = 0;
     for (;;){   
        
         state_machine();
         //sleep(CFG_DELAY);
-        counter++;
     }
 
-    close(fd); /* Close the serial port */
+    close(serial_handler); /* Close the serial port */
     return 0;
 
 }
 
+// serial data receive
+static void* p_read(void* dummy){
 
-void p_write(int* fd){
+    uint8_t data;   // byte read
+    int read_bytes; // amount of read bytes
+
+    while(true){
+        
+        // serial read
+        read_bytes = read(serial_handler, &data, 1);
+        
+        // avaliates serial read
+        if(read_bytes < 1){
+
+            cout << "";
+
+        }else {
+
+            buffer->push(data);
+
+        }
+        
+    }
+}
+
+/*  
+**  enum State { //Basic Sensor Data Feedback - 50 Hz  
+**     
+**      IDLE,               HEADER,         LENGTH,   
+**      TIMESTAMP_0,        TIMESTAMP_1,    BUMPER,             WHEEL_DROP, CLIFF,  
+**      ENCODER_LEFT_0,     ENCODER_LEFT_1,    
+**      ENCODER_RIGHT_0,    ENCODER_RIGHT_1,   
+**      PWM_LEFT,           PWM_RIGHT,      BUTTON,   
+**      CHARGER,            BATTERY,        OVERCURRENT_FLAGS   
+**  }; 
+*/  
+
+void state_machine(){
+
+    uint8_t data;
+
+    data = buffer->pop();
+    
+    switch(read_current_state){
+
+        case IDLE:
+
+            if(data == 0x01){
+                read_current_state = HEADER;
+            }
+            break;
+
+        case HEADER:
+
+            if(data == 0x0F)
+                read_current_state = LENGTH;
+            else
+                read_current_state = IDLE;
+
+        case LENGTH:
+
+            printf("\n=============================");
+            // printf("\nTimestamp 0: 0x%02x ", data);
+            read_current_state = TIMESTAMP_0;
+            break;
+        
+        case TIMESTAMP_0:
+
+            // printf("\nTimestamp 1: 0x%02x ", data);
+            read_current_state = TIMESTAMP_1;
+            break;
+
+        case TIMESTAMP_1:
+
+            printf("\nBumper: 0x%02x ", data);
+            read_current_state = BUMPER;
+            break;
+
+        case BUMPER:
+
+            printf("\nWheel Drop: 0x%02x ", data);
+            read_current_state = WHEEL_DROP;
+            break;
+
+        case WHEEL_DROP:
+
+            // printf("\nCliff: 0x%02x ", data);
+            read_current_state = CLIFF;
+            break;
+
+        case CLIFF:
+
+            printf("\nEncoder Left 0: 0x%02x ", data);
+            read_current_state = ENCODER_LEFT_0;
+            break;
+
+        case ENCODER_LEFT_0:
+
+            printf("\nEncoder Left 1: 0x%02x ", data);
+            read_current_state = ENCODER_LEFT_1;
+            break;
+
+        case ENCODER_LEFT_1:
+
+            printf("\nEncoder Right 0: 0x%02x ", data);
+            read_current_state = ENCODER_RIGHT_0;
+            break;
+
+        case ENCODER_RIGHT_0:
+
+            printf("\nEncoder Right 1: 0x%02x ", data);
+            read_current_state = ENCODER_RIGHT_1;
+            break;
+
+        case ENCODER_RIGHT_1:
+
+            // printf("\nPWM Left: 0x%02x ", data);
+            read_current_state = PWM_LEFT;
+            break;
+        
+        case PWM_LEFT:
+
+            // printf("\nPWM Right: 0x%02x ", data);
+            read_current_state = PWM_RIGHT;
+            break;
+
+        case PWM_RIGHT:
+
+            // printf("\nButton: 0x%02x ", data);
+            read_current_state = BUTTON;
+            break;
+
+        case BUTTON:
+
+            // printf("\nCharger: 0x%02x ", data);
+            read_current_state = CHARGER;
+            break;
+
+        case CHARGER:
+
+            // printf("\nBattery: 0x%02x ", data);
+            read_current_state = BATTERY;
+            break;
+
+        case BATTERY:
+
+            // printf("\nOvercurrent Flags: 0x%02x ", data);
+            read_current_state = IDLE;
+            break;
+
+        default: break;
+    }
+
+}
+
+
+void p_write(int* serial_handler){
 
     unsigned char* out_pkt = (unsigned char*) malloc(sizeof(unsigned char) * SOUND_PACKET_SIZE);
     MountPacket_Sound(out_pkt, SOUND_PACKET_SIZE);
 
-    write(*fd, out_pkt, SOUND_PACKET_SIZE);
+    write(*serial_handler, out_pkt, SOUND_PACKET_SIZE);
     free(out_pkt);
 }
 
-void SerialConfig(int* fd){
+void SerialConfig(int* serial_handler){
 
-    *fd = open("/dev/ttyUSB0",O_RDWR | O_NOCTTY | O_NONBLOCK | O_NDELAY);
+    *serial_handler = open("/dev/ttyUSB0",O_RDWR | O_NOCTTY | O_NONBLOCK | O_NDELAY);
                             
-    if (fd < 0)
+    if (serial_handler < 0)
 		cout << "Error " << errno << " opening " << "/dev/ttyUSB0" << ": " << strerror (errno) << endl;
 
-    struct termios tty;	           /* Create the structure                          */
-    tcgetattr(*fd, &tty);	   /* Get the current attributes of the Serial port */
+    struct termios tty;	                /* Create the structure                                     */
+    tcgetattr(*serial_handler, &tty);   /* Get the current attributes of the Serial port            */
 
-    /* Setting the Baud rate */         
-    cfsetispeed(&tty, B115200);    /* Set Read  Speed as 9600                       */
-    cfsetospeed(&tty, B115200);    /* Set Write Speed as 9600                       */
-
-    /* 8N1 Mode */          
-    tty.c_cflag &= ~PARENB;        /* Disables the Parity Enable bit(PARENB),So No Parity   */
-    tty.c_cflag &= ~CSTOPB;        /* CSTOPB = 2 Stop bits,here it is cleared so 1 Stop bit */
-    tty.c_cflag |=  CS8;           /* Set the data bits = 8                                 */
+    /* Setting the Baud rate */                     
+    cfsetispeed(&tty, B115200);         /* Set Read  Speed as 9600                                  */
+    cfsetospeed(&tty, B115200);         /* Set Write Speed as 9600                                  */
+        
+    /* 8N1 Mode */                  
+    tty.c_cflag &= ~PARENB;             /* Disables the Parity Enable bit(PARENB),So No Parity      */
+    tty.c_cflag &= ~CSTOPB;             /* CSTOPB = 2 Stop bits,here it is cleared so 1 Stop bit    */
+    tty.c_cflag |=  CS8;                /* Set the data bits = 8                                    */
 
     printf(
-        ((tcsetattr(*fd, TCSANOW, &tty)) != 0)
+        ((tcsetattr(*serial_handler, TCSANOW, &tty)) != 0)
             ? "\n  ERROR ! in Setting attributes"
             : "\n  BaudRate = 115200 \n  StopBits = 1 \n  Parity   = none"
     );
 
-    tcflush(*fd, TCIFLUSH);                     /* Discards old data in the rx buffer            */
+    tcflush(*serial_handler, TCIFLUSH);                     /* Discards old data in the rx buffer            */
 }
 
 void MountPacket_Twist( unsigned char* packet,
