@@ -64,7 +64,8 @@ using namespace std;
 
 enum State { //Basic Sensor Data Feedback - 50 Hz
 
-    IDLE,               HEADER,         LENGTH,
+    IDLE,               HEADER_0, HEADER_1,         LENGTH,
+    SUB_HEADER, SUB_LENGTH,  
     TIMESTAMP_0,        TIMESTAMP_1,    BUMPER,             WHEEL_DROP, CLIFF,
     ENCODER_LEFT_0,     ENCODER_LEFT_1, 
     ENCODER_RIGHT_0,    ENCODER_RIGHT_1,
@@ -72,7 +73,7 @@ enum State { //Basic Sensor Data Feedback - 50 Hz
     CHARGER,            BATTERY,        OVERCURRENT_FLAGS
 };
 
-State read_current_state = IDLE;
+State read_current_state = HEADER_0;
 
 void SerialConfig(int*);
 void MountPacket_Twist(unsigned char*, unsigned int, int, int, int, int, int, int);
@@ -85,6 +86,55 @@ void p_read(int* serial_handler);
 
 Buffer* buffer;     // stores serail packets
 int serial_handler; // serial handler (file descriptor)
+
+struct BasicSensorData{
+    uint8_t id;
+    uint8_t length;
+    uint16_t timestamp;
+    uint8_t bumper;
+    uint8_t wheel_drop;
+    uint8_t cliff;
+    uint16_t encoder_left;
+    uint16_t encoder_right;
+    uint8_t pwm_left;
+    uint8_t pwm_right;
+    uint8_t button;
+    uint8_t charger;
+    uint8_t battery;
+    uint8_t overcurrent_flags;
+};
+
+struct DockingIR{
+    uint8_t id;
+    uint8_t size;
+    uint8_t signal_right;
+    uint8_t signal_central;
+    uint8_t signal_left;
+};
+
+struct InertialSensor{
+    uint8_t id;
+    uint8_t size;
+    uint16_t angle;
+    uint16_t angle_rate;
+    uint8_t unused[3];
+}
+
+struct CliffSensor{
+    uint8_t id;
+    uint8_t size;
+    uint16_t right_cliff_sensor;
+    uint16_t central_cliff_sensor;
+    uint16_t left_cliff_sensor;
+}
+
+struct Current{
+    uint8_t id;
+    uint8_t size;
+    uint16_t left_motor;
+    uint16_t right_motor;
+}
+
 
 //startup
 int main(void)
@@ -155,114 +205,158 @@ static void* p_read(void* dummy){
 void state_machine(){
 
     uint8_t data;
-
+    int bumper;
+    int encoder_left;
+    int encoder_right;
     data = buffer->pop();
     
     switch(read_current_state){
 
-        case IDLE:
+        case HEADER_0:
 
-            if(data == 0x01){
-                read_current_state = HEADER;
+            if(data == 0xAA){
+                // printf("Achei 0xAA");
+                read_current_state = HEADER_1;
             }
             break;
 
-        case HEADER:
+        case HEADER_1:
 
-            if(data == 0x0F)
+            if(data == 0x55){
                 read_current_state = LENGTH;
-            else
-                read_current_state = IDLE;
+            }else{
+                read_current_state = HEADER_0;
+            }
+            break;
 
         case LENGTH:
+        
+            if(data == 0x4d){
+                printf("\nLength: 0x%02x ", data);
+                read_current_state = SUB_HEADER;
+            }else
+                read_current_state = HEADER_0;
+            break;
+
+        case SUB_HEADER:
+
+            printf("\n==========ID: 0x%02x ", data);
+            
+            if(data == 0x01){
+                read_current_state = SUB_LENGTH;
+            }
+            break;
+
+        case SUB_LENGTH:
+
+            if(data == 0x0F)
+                read_current_state = TIMESTAMP_0;
+            else
+                read_current_state = HEADER_0;
+            break;
+
+        case TIMESTAMP_0:
 
             printf("\n=============================");
             // printf("\nTimestamp 0: 0x%02x ", data);
-            read_current_state = TIMESTAMP_0;
-            break;
-        
-        case TIMESTAMP_0:
-
-            // printf("\nTimestamp 1: 0x%02x ", data);
             read_current_state = TIMESTAMP_1;
             break;
-
+        
         case TIMESTAMP_1:
 
-            printf("\nBumper: 0x%02x ", data);
+            // printf("\nTimestamp 1: 0x%02x ", data);
             read_current_state = BUMPER;
             break;
 
         case BUMPER:
+            bumper = data;
+            
+            if (data > 7)
 
-            printf("\nWheel Drop: 0x%02x ", data);
-            read_current_state = WHEEL_DROP;
+                read_current_state = HEADER_0;
+
+            else{
+
+                read_current_state = WHEEL_DROP;
+                printf("\nBumper: 0x%02x ", bumper);
+
+            }
             break;
 
         case WHEEL_DROP:
 
-            // printf("\nCliff: 0x%02x ", data);
-            read_current_state = CLIFF;
+            printf("\nWheel Drop: 0x%02x ", data);
+            if (data > 3)
+                read_current_state = HEADER_0;
+            else
+                read_current_state = CLIFF;
             break;
 
         case CLIFF:
 
-            printf("\nEncoder Left 0: 0x%02x ", data);
+            // printf("\nCliff: 0x%02x ", data);
             read_current_state = ENCODER_LEFT_0;
             break;
 
         case ENCODER_LEFT_0:
-
-            printf("\nEncoder Left 1: 0x%02x ", data);
+            encoder_left = data;
+            //printf("\nEncoder Left 0: 0x%02x ", data);
             read_current_state = ENCODER_LEFT_1;
             break;
 
         case ENCODER_LEFT_1:
-
-            printf("\nEncoder Right 0: 0x%02x ", data);
+            encoder_left = encoder_left << 8;
+            encoder_left = encoder_left & data; //?
+            printf("\nEncoder Left 1: 0x%02x ", encoder_left);
             read_current_state = ENCODER_RIGHT_0;
             break;
 
         case ENCODER_RIGHT_0:
 
-            printf("\nEncoder Right 1: 0x%02x ", data);
+            printf("\nEncoder Right 0: 0x%02x ", data);
             read_current_state = ENCODER_RIGHT_1;
             break;
 
         case ENCODER_RIGHT_1:
 
-            // printf("\nPWM Left: 0x%02x ", data);
+            printf("\nEncoder Right 1: 0x%02x ", data);
             read_current_state = PWM_LEFT;
             break;
-        
+
         case PWM_LEFT:
 
-            // printf("\nPWM Right: 0x%02x ", data);
+            // printf("\nPWM Left: 0x%02x ", data);
             read_current_state = PWM_RIGHT;
             break;
-
+        
         case PWM_RIGHT:
 
-            // printf("\nButton: 0x%02x ", data);
+            // printf("\nPWM Right: 0x%02x ", data);
             read_current_state = BUTTON;
             break;
 
         case BUTTON:
 
-            // printf("\nCharger: 0x%02x ", data);
+            // printf("\nButton: 0x%02x ", data);
             read_current_state = CHARGER;
             break;
 
         case CHARGER:
 
-            // printf("\nBattery: 0x%02x ", data);
+            // printf("\nCharger: 0x%02x ", data);
             read_current_state = BATTERY;
             break;
 
         case BATTERY:
 
+            // printf("\nBattery: 0x%02x ", data);
+            read_current_state = OVERCURRENT_FLAGS;
+            break;
+
+        case OVERCURRENT_FLAGS:
+
             // printf("\nOvercurrent Flags: 0x%02x ", data);
-            read_current_state = IDLE;
+            read_current_state = HEADER_0;
             break;
 
         default: break;
