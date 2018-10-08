@@ -54,7 +54,8 @@
 #include <stdint.h>
 #include <cstdlib>
 
-#include "Include/Buffer.h"
+#include "Buffer.h"
+#include "KobukiPacket.h"
 
 using namespace std;
 
@@ -75,71 +76,84 @@ enum State { //Basic Sensor Data Feedback - 50 Hz
 
 State read_current_state = HEADER_0;
 
-void SerialConfig(int*);
 void MountPacket_Twist(unsigned char*, unsigned int, int, int, int, int, int, int);
 void MountPacket_Sound(unsigned char*, unsigned int);
-// serial data receive
-static void* p_read(void*);
-void state_machine();
-void p_write(int* serial_handler);
-void p_read(int* serial_handler);
 
-Buffer* buffer;     // stores serail packets
+
+void serial_init(int*);
+void state_machine();
+
+Buffer* buffer;     // stores serial packets
 int serial_handler; // serial handler (file descriptor)
 
-struct BasicSensorData{
-    uint8_t id;
-    uint8_t length;
-    uint16_t timestamp;
-    uint8_t bumper;
-    uint8_t wheel_drop;
-    uint8_t cliff;
-    uint16_t encoder_left;
-    uint16_t encoder_right;
-    uint8_t pwm_left;
-    uint8_t pwm_right;
-    uint8_t button;
-    uint8_t charger;
-    uint8_t battery;
-    uint8_t overcurrent_flags;
-};
+/** SERIAL_INIT
+  * Function that configures serial port to
+  * interact with kobuki.*/
+void serial_init(int* serial_handler){
 
-struct DockingIR{
-    uint8_t id;
-    uint8_t size;
-    uint8_t signal_right;
-    uint8_t signal_central;
-    uint8_t signal_left;
-};
+    *serial_handler = open("/dev/ttyUSB0",O_RDWR | O_NOCTTY | O_NONBLOCK | O_NDELAY);
+                            
+    if (serial_handler < 0)
+		cout << "Error " << errno << " opening " << "/dev/ttyUSB0" << ": " << strerror (errno) << endl;
 
-struct InertialSensor{
-    uint8_t id;
-    uint8_t size;
-    uint16_t angle;
-    uint16_t angle_rate;
-    uint8_t unused[3];
+    struct termios tty;
+    tcgetattr(*serial_handler, &tty);
+
+    //Setting the Baud rate
+    cfsetispeed(&tty, B115200);  //read speed  = 115200
+    cfsetospeed(&tty, B115200);  //write speed = 115200
+        
+    //8N1 Mode
+    tty.c_cflag &= ~PARENB;  //no parity
+    tty.c_cflag &= ~CSTOPB;  //1 stop byte
+    tty.c_cflag |=  CS8;     //data bits = 8
+
+	//print configurations
+    printf(
+        ((tcsetattr(*serial_handler, TCSANOW, &tty)) != 0)
+            ? "\n  ERROR ! in Setting attributes"
+            : "\n  BaudRate = 115200 \n  StopBits = 1 \n  Parity   = none"
+    );
+
+    tcflush(*serial_handler, TCIFLUSH); //Discards old data in the rx buffer
 }
 
-struct CliffSensor{
-    uint8_t id;
-    uint8_t size;
-    uint16_t right_cliff_sensor;
-    uint16_t central_cliff_sensor;
-    uint16_t left_cliff_sensor;
+
+/** SERIAL_MONITORING_THREAD 
+  * Function that read data from serial port 
+  * and feed the packet buffer. Data is read
+  * byte-to-byte (1x uint8_t per tick). Buffer
+  * data is consumed accoding to the configured 
+  * packet len.*/
+static void* serial_monitoring_thread(void* dummy){
+
+    uint8_t data;   // byte to be read
+    uint8_t read_bytes; // amount of read bytes (must be 1)
+
+	//thread runs indefinitely
+    do{
+		//read_bytes must be always 1, otherwise 
+		//the reading failed 
+        read_bytes = read(serial_handler, &data, 1);
+        
+        if(read_bytes != 1){
+            //unable to get data, try again in next cycle
+            
+        }else {
+        
+        	//data read succefully, fill the buffer
+            buffer->push(data);
+        }
+        
+    }while(true);
 }
 
-struct Current{
-    uint8_t id;
-    uint8_t size;
-    uint16_t left_motor;
-    uint16_t right_motor;
-}
 
 
 //startup
 int main(void)
 {
-    SerialConfig(&serial_handler);  /* Serial configuration */
+    serial_init(&serial_handler);  /* Serial configuration */
 
     printf("\n +----------------------------------+");
     printf("\n |        Kobuki Driver             |");
@@ -150,7 +164,7 @@ int main(void)
 
 	// in a separated thread, bufferize the serial data
     pthread_t t;
-    if(pthread_create(&t, NULL, &p_read, NULL)){
+    if(pthread_create(&t, NULL, &serial_monitoring_thread, NULL)){
         cout << "error creating thread" <<endl;
     }
 
@@ -163,31 +177,6 @@ int main(void)
     close(serial_handler); /* Close the serial port */
     return 0;
 
-}
-
-// serial data receive
-static void* p_read(void* dummy){
-
-    uint8_t data;   // byte read
-    int read_bytes; // amount of read bytes
-
-    while(true){
-        
-        // serial read
-        read_bytes = read(serial_handler, &data, 1);
-        
-        // avaliates serial read
-        if(read_bytes < 1){
-
-            cout << "";
-
-        }else {
-
-            buffer->push(data);
-
-        }
-        
-    }
 }
 
 /*  
@@ -374,33 +363,6 @@ void p_write(int* serial_handler){
     free(out_pkt);
 }
 
-void SerialConfig(int* serial_handler){
-
-    *serial_handler = open("/dev/ttyUSB0",O_RDWR | O_NOCTTY | O_NONBLOCK | O_NDELAY);
-                            
-    if (serial_handler < 0)
-		cout << "Error " << errno << " opening " << "/dev/ttyUSB0" << ": " << strerror (errno) << endl;
-
-    struct termios tty;	                /* Create the structure                                     */
-    tcgetattr(*serial_handler, &tty);   /* Get the current attributes of the Serial port            */
-
-    /* Setting the Baud rate */                     
-    cfsetispeed(&tty, B115200);         /* Set Read  Speed as 9600                                  */
-    cfsetospeed(&tty, B115200);         /* Set Write Speed as 9600                                  */
-        
-    /* 8N1 Mode */                  
-    tty.c_cflag &= ~PARENB;             /* Disables the Parity Enable bit(PARENB),So No Parity      */
-    tty.c_cflag &= ~CSTOPB;             /* CSTOPB = 2 Stop bits,here it is cleared so 1 Stop bit    */
-    tty.c_cflag |=  CS8;                /* Set the data bits = 8                                    */
-
-    printf(
-        ((tcsetattr(*serial_handler, TCSANOW, &tty)) != 0)
-            ? "\n  ERROR ! in Setting attributes"
-            : "\n  BaudRate = 115200 \n  StopBits = 1 \n  Parity   = none"
-    );
-
-    tcflush(*serial_handler, TCIFLUSH);                     /* Discards old data in the rx buffer            */
-}
 
 void MountPacket_Twist( unsigned char* packet,
                         unsigned int packet_size,

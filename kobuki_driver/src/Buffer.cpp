@@ -1,4 +1,4 @@
-#include "Include/Buffer.h"
+#include "Buffer.h"
 
 Buffer::Buffer(){
 	this->count = 0;
