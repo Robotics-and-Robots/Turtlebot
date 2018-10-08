@@ -1,11 +1,18 @@
 #include "PacketParser.h"
+<<<<<<< HEAD
 #include "KobukiPacket.h"
+=======
+>>>>>>> 6519131129b8b6def4554cb708eeac33c12b78ea
 #include "Buffer.h"
 
 #include <stdio.h>
 #include <string.h>
+<<<<<<< HEAD
 #include <ios>
 #include <iostream>
+=======
+
+>>>>>>> 6519131129b8b6def4554cb708eeac33c12b78ea
 #include <cstdlib>
 
 /*  
@@ -84,6 +91,7 @@ void MountPacket_Sound(unsigned char* packet, unsigned int packet_size){
 }
 
 
+<<<<<<< HEAD
 
 #define PACKET_LEN 77
 void parse_packet(Buffer* buffer){
@@ -119,6 +127,10 @@ void parse_packet(Buffer* buffer){
 
 
 /*
+=======
+void parse_packet(Buffer* buffer){
+
+>>>>>>> 6519131129b8b6def4554cb708eeac33c12b78ea
 	State read_current_state = HEADER_0;
 
     uint8_t data;
@@ -279,5 +291,9 @@ void parse_packet(Buffer* buffer){
         default: break;
     }
 
+<<<<<<< HEAD
 }
 */
+=======
+}
+>>>>>>> 6519131129b8b6def4554cb708eeac33c12b78ea

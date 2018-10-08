@@ -156,10 +156,14 @@ int main(void)
 	//keep parsing packets until the end of the program
     for (;;){   
        
+<<<<<<< HEAD
         if(buffer->top() == 0xAA)
             parse_packet(buffer);
         else 
             buffer->pop();
+=======
+        parse_packet(buffer);
+>>>>>>> 6519131129b8b6def4554cb708eeac33c12b78ea
 
         //sleep(CFG_DELAY);
     }

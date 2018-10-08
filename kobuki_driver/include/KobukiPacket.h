@@ -71,11 +71,14 @@ typedef struct{
 	CliffSensorPacket     cliff_sensor_data;   //? bytes
 	CurrentPacket         current_data;        //? bytes
 
+<<<<<<< HEAD
     //RawDataGyro
     //GeneralPurpose
 
     uint8_t checksum;
 
+=======
+>>>>>>> 6519131129b8b6def4554cb708eeac33c12b78ea
 } KobukiPacket;
 
 
