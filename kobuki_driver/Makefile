@@ -6,7 +6,7 @@ CPP_FLAGS :=-Iinclude -o $(OUT_DIR)/$(BIN_NAME).exe
 LD_FLAGS  :=-lpthread
 
 
-SRC_FILES :=$(SRC_DIR)/Buffer.cpp $(SRC_DIR)/Driver.cpp
+SRC_FILES :=$(SRC_DIR)/Buffer.cpp $(SRC_DIR)/Driver.cpp $(SRC_DIR)/PacketParser.cpp
 
 all:
 	g++ $(CPP_FLAGS) $(SRC_FILES) $(LD_FLAGS)
