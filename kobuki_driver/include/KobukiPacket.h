@@ -60,7 +60,7 @@ typedef struct {
 **/
 typedef struct{
 
-	//uint8_t header_0;    //0xAA
+	//uint8_t header_0;  //0xAA
 	uint8_t header_1;    //0x55
 	uint8_t payload_len; //0x??
 	
@@ -75,6 +75,7 @@ typedef struct{
     //GeneralPurpose
 
     uint8_t checksum;
+    uint8_t header_0;
 
 } KobukiPacket;
 

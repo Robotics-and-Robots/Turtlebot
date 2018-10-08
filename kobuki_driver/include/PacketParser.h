@@ -2,13 +2,13 @@
 #define _PACKETPARSER_H
 
 #include "Buffer.h"
-
+#include "KobukiPacket.h"
 
 
 /** PARSE_PACKET
   * Consume XX bytes from the buffer and allocate memory
   * to a new packet. */
-void parse_packet(Buffer* buf);
+KobukiPacket parse_packet(Buffer* buf);
 
 
 /*  
