@@ -60,7 +60,7 @@ typedef struct {
 **/
 typedef struct{
 
-	uint8_t header_0;    //0xAA
+	//uint8_t header_0;    //0xAA
 	uint8_t header_1;    //0x55
 	uint8_t payload_len; //0x??
 	
@@ -71,14 +71,11 @@ typedef struct{
 	CliffSensorPacket     cliff_sensor_data;   //? bytes
 	CurrentPacket         current_data;        //? bytes
 
-<<<<<<< HEAD
     //RawDataGyro
     //GeneralPurpose
 
     uint8_t checksum;
 
-=======
->>>>>>> 6519131129b8b6def4554cb708eeac33c12b78ea
 } KobukiPacket;
 
 

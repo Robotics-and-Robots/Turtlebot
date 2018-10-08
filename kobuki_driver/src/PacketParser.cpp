@@ -1,18 +1,12 @@
 #include "PacketParser.h"
-<<<<<<< HEAD
 #include "KobukiPacket.h"
-=======
->>>>>>> 6519131129b8b6def4554cb708eeac33c12b78ea
 #include "Buffer.h"
 
 #include <stdio.h>
 #include <string.h>
-<<<<<<< HEAD
+
 #include <ios>
 #include <iostream>
-=======
-
->>>>>>> 6519131129b8b6def4554cb708eeac33c12b78ea
 #include <cstdlib>
 
 /*  
@@ -90,9 +84,6 @@ void MountPacket_Sound(unsigned char* packet, unsigned int packet_size){
     packet[packet_size -1] = packet_checksum;
 }
 
-
-<<<<<<< HEAD
-
 #define PACKET_LEN 77
 void parse_packet(Buffer* buffer){
 
@@ -104,6 +95,9 @@ void parse_packet(Buffer* buffer){
 
     //pops packets from the buffer
     int parsed_bytes = 0;
+    
+    int x; 
+
     while(true){
 
         if(parsed_bytes == PACKET_LEN)
@@ -114,15 +108,15 @@ void parse_packet(Buffer* buffer){
 
         packet.raw[parsed_bytes] = buffer->top();
         buffer->pop();
+        
+        //std::cout << std::hex << (x = packet.raw[parsed_bytes]) << std::endl;
+        
         parsed_bytes++;
     }
     
-    int x; 
-
-    std::cout <<
-        "header0 = 0x" << std::hex << (x = packet.raw[0]) << std::endl <<
-        "header1 = 0x" << std::hex << (x = packet.raw[1]) << std::endl << 
-        "payload_len = 0x" << std::hex << (x = packet.data.payload_len) << std::endl;
+	std::cout << "header0 = 0x" << std::hex << (x = packet.raw[0]) << std::endl;
+	std::cout << "header1 = 0x" << std::hex << (x = packet.raw[1]) << std::endl;
+	std::cout << "payload = 0x" << std::hex << (x = packet.raw[2]) << std::endl;
 }
 
 
@@ -294,6 +288,3 @@ void parse_packet(Buffer* buffer){
 <<<<<<< HEAD
 }
 */
-=======
-}
->>>>>>> 6519131129b8b6def4554cb708eeac33c12b78ea
