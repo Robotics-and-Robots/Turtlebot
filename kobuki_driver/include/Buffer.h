@@ -1,3 +1,6 @@
+#ifndef _BUFFER_H
+#define _BUFFER_H
+
 #define BUFFER_LEN 100000
 #define BUFFER_WORD_LEN 1
 
@@ -19,6 +22,12 @@ class Buffer{
 
         void push(uint8_t);
         uint8_t pop();
+        uint8_t top();
+
+        uint8_t size();
+
 
 	    void clear();
 };
+
+#endif /* _BUFFER_H */

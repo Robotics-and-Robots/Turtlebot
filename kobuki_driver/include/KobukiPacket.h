@@ -2,7 +2,7 @@
 #define __KOBUKIPACKET_H
 
 typedef struct{
-    uint8_t id;
+    uint8_t header;
     uint8_t length;
     uint16_t timestamp;
     uint8_t bumper;
@@ -48,5 +48,35 @@ typedef struct {
     uint16_t left_motor;
     uint16_t right_motor;
 } CurrentPacket;
+
+
+/**
+	TODO:
+		a) tem que fazer a estrutura do pacote de gyro
+		b) tem que adicionar os packets abaixo na ordem certa,
+		   pois somente o primeiro está correto até então
+		c) tem que ler de X em X bytes. X é o tamanho total do pacotão
+
+**/
+typedef struct{
+
+	uint8_t header_0;    //0xAA
+	uint8_t header_1;    //0x55
+	uint8_t payload_len; //0x??
+	
+	BasicSensorDataPacket basic_sensor_data;   //? bytes
+	DockingIrPacket       docking_ir_data;     //? bytes
+	InertialSensorPacket  inetial_sensor_data; //? bytes
+
+	CliffSensorPacket     cliff_sensor_data;   //? bytes
+	CurrentPacket         current_data;        //? bytes
+
+    //RawDataGyro
+    //GeneralPurpose
+
+    uint8_t checksum;
+
+} KobukiPacket;
+
 
 #endif /* KOBUKIDRIVER */

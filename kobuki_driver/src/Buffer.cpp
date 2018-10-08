@@ -6,8 +6,16 @@ Buffer::Buffer(){
 	this->tail = 0;
 }
 
+uint8_t Buffer::top(){
+	return this->buf[head];
+}
+
 Buffer::~Buffer(){
 	
+}
+
+uint8_t Buffer::size(){
+	return count;
 }
 
 void Buffer::push(uint8_t data){
