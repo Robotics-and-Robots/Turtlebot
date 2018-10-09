@@ -11,13 +11,26 @@
 
 #define PACKET_LEN 77
 
-
+int counterxx = 0;
 void treat_packet(KobukiPacket packet){
 
-    int x; 
-	std::cout << std::hex << (x = packet.header_0) << std::endl;
-	std::cout << std::hex << (x = packet.header_1) << std::endl;
-	std::cout << std::hex << (x = packet.payload_len) << std::endl;
+    counterxx = (counterxx + 1) % 50;
+
+    if(counterxx != 30) return;
+
+    unsigned int x; 
+	// std::cout << "Header 0  : " << std::hex << (x = packet.header_0) << std::endl;
+	// std::cout << "Header 1  : " << std::hex << (x = packet.header_1) << std::endl;
+	// std::cout << "Payload   : " << std::hex << (x = packet.payload_len) << std::endl;
+
+    std::cout << "BD Header : " << std::hex << (x = packet.basic_sensor_data.header)        << std::endl;
+    // std::cout << "Timestamp : " << std::hex << (x = packet.basic_sensor_data.timestamp)     << std::endl;
+    std::cout << "Bumper    : " << std::hex << (x = packet.basic_sensor_data.bumper)        << std::endl;
+    // std::cout << "Wheel Drop: " << std::hex << (x = packet.basic_sensor_data.wheel_drop)    << std::endl;
+    // std::cout << "Cliff     : " << std::hex << (x = packet.basic_sensor_data.cliff)    << std::endl;
+    // std::cout << "Encoder L : " << std::hex << (x = packet.basic_sensor_data.encoder_left)  << std::endl;
+    // std::cout << "Encoder R : " << std::hex << (x = packet.basic_sensor_data.encoder_right) << std::endl;
+    std::cout << "Buttonn   : " << std::hex << (x = packet.basic_sensor_data.button) << std::endl;
 
 }
 

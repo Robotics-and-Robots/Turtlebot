@@ -158,7 +158,6 @@ int main(void)
 
         if(buffer->top() == 0xAA){
         	buffer->pop(); //removes AA from stack
-        
         	if(buffer->top() == 0x55){
 	            parse_packet(buffer);        	
         	}else{
