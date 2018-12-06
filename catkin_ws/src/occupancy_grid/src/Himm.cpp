@@ -1,4 +1,5 @@
 #include "../include/Himm.h"
+#include "ros/ros.h"
 
 /**
  * Ctor.
@@ -22,73 +23,66 @@ Himm::~Himm(){}
  * @param theta The inclination of the laser ray during the reading in degrees
  * @returns The value written to the cell
  */
-OGCellType Himm::UpdateLocation(Pose2D pose, OGCellType dist, OGCellType theta){
+OGCellType Himm::UpdateLocation(Pose2D pose, OGCellType dist, OGCellType thetaRay){
 
-	// Defines odom_theta (robot odometry) between 0 <-> 2PI
-	double odom_theta;
-	if(pose.theta < 0)
-		odom_theta = (2 * M_PI) - std::abs(pose.theta);
-	else 
-		odom_theta = pose.theta;
+	// angle difference between robot angle and hokuyo ray angle
+	double corrected_angle = pose.theta + thetaRay;
 
-	// Defines HOKUYO laser angle between 0 <-> 2PI
-	double calc_theta;
-	if(theta < 0)
-		calc_theta = (2 * M_PI) - std::abs(theta);
-	else
-		calc_theta = theta;
-
-	//angle correction (neg to pos rad values)
-	double pivot_ang;
-	pivot_ang = (HOKUYO_ANGLE_MAX - HOKUYO_ANGLE_MIN) / 2;
-	
-	if (calc_theta > pivot_ang)
-		odom_theta -= calc_theta;
-	else
-		odom_theta += calc_theta;
-	
-	// while(odom_theta < 0)
-	// 	odom_theta  = (2 * M_PI) - std::abs(odom_theta);
-
-	// OGCellType wDist = cos(odom_theta) * dist; //Hokuyo laser horizontal distance
-	// OGCellType hDist = sin(odom_theta) * dist; //Hokuyo laser vertical distance
-
-	OGCellType wDist = cos(calc_theta) * dist; //Hokuyo laser horizontal distance
-	OGCellType hDist = sin(calc_theta) * dist; //Hokuyo laser vertical distance	
-
-	int x_coord = (pose.x + wDist) * UNIT_FIX;
-	int y_coord = (pose.y + hDist) * UNIT_FIX;
-
-	//cria vetor na origem com o mesmo comprimento do vetor 
-	//gerado pelo laser (que tem origem no robô)
+	// Final position of the hokuyo ray.
 	Vector2D vecLaser;
-	vecLaser.x = x_coord - pose.x;
-	vecLaser.y = y_coord - pose.y;
+	vecLaser.x = (cos(corrected_angle) * dist + pose.x); // Global x pos of the ray
+	vecLaser.y = (sin(corrected_angle) * dist + pose.y); // Global y pos of the ray
 
-	//gera o vetor unitário do vetor criado (que tem mesmo comprimento
-	//e direção do vetor unitário do laser)
-	Vector2D vecUnitary = ~vecLaser;
+	//inicio da limpeza
+	Vector2D md;
+	md.x = round(pose.x * UNIT_FIX);
+	md.y = round(pose.y * UNIT_FIX);
 
-	//cria o vetor da posição do robô
-	Vector2D vecRobot;
-	vecRobot.x = pose.x;
-	vecRobot.y = pose.y;
-	
-	//cria um vetor de tamanho unitário com origem
-	//na coordenada do robô. Incrementa este vetor 
-	//em 1 (comprimento) enquanto ele não atingir 
-	//a coordenada encontrada pelo laser, passando
-	//pelas coordenadas no caminho entre o robô e o
-	//alvo encontrado pelo laser.
-	Vector2D vecIncrement;
-	vecIncrement = vecRobot; //posev é o centro do robô
-	
-	while(!vecIncrement < !vecLaser){
-		_grid->Set(round(vecIncrement.x), round(vecIncrement.y), -1);
-		vecIncrement = (vecIncrement + vecUnitary);
+	Vector2D target;
+	target.x = round(vecLaser.x * UNIT_FIX);
+	target.y = round(vecLaser.y * UNIT_FIX);
+
+	while((md.x != target.x) || (md.y != target.y)){
+
+		_grid->Set(
+				md.x, 
+				md.y, 
+				-1);
+
+		// ROS_INFO("MD X: [%f] MD Y: [%f]", md.x, md.y);
+
+		if(md.x > target.x){
+			md.x -= 1;
+		}else if(md.x < target.x){
+			md.x += 1;
+		}
+		
+		if(md.y > target.y){
+			md.y -= 1;
+		}else if(md.y < target.y){
+			md.y += 1;
+		}
 	}
 
+	//inicio da limpeza
+	// Vector2D 			robotPose;
+	// robotPose.x 		= pose.x * UNIT_FIX;
+	// robotPose.y 		= pose.y * UNIT_FIX;
+
+	// Vector2D vecRay 	= vecLaser - robotPose;
+	// Vector2D uvecRay	= ~vecRay;
+
+	// while(!uvecRay < !vecRay){
+
+	// 	_grid->Set(
+	// 		round(robotPose.x + uvecRay.x),
+	// 		round(robotPose.y + uvecRay.y), 
+	// 		-1);
+
+	// 	uvecRay = uvecRay + ~vecRay;
+	// }
+
 	//set location with target increment
-	_grid->Set(x_coord, y_coord, 1);
+	_grid->Set(vecLaser.x * UNIT_FIX, vecLaser.y * UNIT_FIX, 1);
 }
 

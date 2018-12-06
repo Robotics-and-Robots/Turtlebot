@@ -250,3 +250,5 @@ catkin_ws/build/occupancy_grid/CMakeFiles/occupancy_grid_node.dir/src/OccupancyG
 catkin_ws/build/occupancy_grid/CMakeFiles/occupancy_grid_node.dir/src/OccupancyGridNode.cpp.o
 catkin_ws/src/.vscode/c_cpp_properties.json
 catkin_ws/src/.vscode/settings.json
+catkin_ws/build/occupancy_grid/CMakeFiles/occupancy_grid_node.dir/src/Himm.cpp.o
+catkin_ws/build/occupancy_grid/CMakeFiles/occupancy_grid_node.dir/src/PotentialFields.cpp.o
