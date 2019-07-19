@@ -55,6 +55,4 @@ OBS Comando (1): roda o gazebo
 OBS Comando (2): carrega o mapa e o sistema de localização AMCL.  
 OBS Comando (3): Roda o RVIZ, no qual você poderá definir comandos de movimentação por meio do botão "2D Nav Goal".
 É provável que o turtlebot gire bastante. Ele faz isso por 2 motivos: estar tentando se localizar ou má configuração de deslocamento.
-No segundo caso, você poderá reconfigurar o move_base do turtlebot (http://wiki.ros.org/base_local_planner).  
-
-Também podemos fazer isso no robô real se você quiser.
+No segundo caso, você poderá reconfigurar o move_base do turtlebot (http://wiki.ros.org/base_local_planner). 
