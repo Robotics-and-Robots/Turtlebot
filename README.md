@@ -39,7 +39,7 @@ OBS Comando (2): armazena os dados num mapa na memória
 OBS Comando (3): roda o RVIZ para voce ver como estah ficando o mapa  
 OBS Comando (4): controla a movimentaçao do robo via teclado. Movimente o robo pelo cenario. Quando o mapa no RVIZ parecer adequado/razoavel, voce deverá rodar o comando (5).  
 
-5) rosrun map_server map_saver -f /home/marcelo/maps/my_new_map  
+5) rosrun map_server map_saver -f /home/lsa/maps/my_new_map  
 
 OBS Comando (5): Esse comando irá transferir o mapa da memória para o arquivo my_new_map.pgm. Além disso, será criado um arquivo de configuração my_new_map.yaml  
 Se você quiser poderá corrigir o arquivo pgm no GIMP.
